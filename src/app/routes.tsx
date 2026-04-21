@@ -7,6 +7,7 @@ import { QuizPage } from "./pages/QuizPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { TeacherDashboard } from "./pages/TeacherDashboard";
+import { MediaPage } from "./pages/MediaPage";
 
 export const router = createBrowserRouter([
   {
@@ -41,4 +42,8 @@ export const router = createBrowserRouter([
     path: "/teacher",
     Component: TeacherDashboard,
   },
+  {
+    path: "/media",
+    Component: MediaPage
+  }
 ]);

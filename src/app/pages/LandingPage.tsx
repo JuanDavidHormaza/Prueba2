@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { Clock, FileQuestion, Award, GraduationCap, Users, BookOpen, ChevronRight, Sparkles } from "lucide-react";
 
+
 export function LandingPage() {
   const navigate = useNavigate();
 
