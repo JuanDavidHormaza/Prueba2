@@ -62,7 +62,7 @@ export function LandingPage() {
               </h2>
 
               <p className="text-lg text-muted-foreground mb-8 leading-relaxed max-w-lg">
-                Completa un cuestionario interactivo estilo Kahoot y descubre tu nivel linguistico en minutos. 
+                Completa un cuestionario interactivo y descubre tu nivel linguistico en minutos. 
                 Recibe retroalimentacion personalizada de tus docentes.
               </p>
 

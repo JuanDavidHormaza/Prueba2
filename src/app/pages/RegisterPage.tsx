@@ -73,7 +73,6 @@ export function RegisterPage() {
             {/* Features */}
             <div className="space-y-4 text-left">
               {[
-                "Evaluaciones interactivas estilo Kahoot",
                 "Retroalimentacion de docentes",
                 "Certificado de nivel oficial",
                 "Seguimiento de progreso"
