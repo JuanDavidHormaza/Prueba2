@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
-import { Eye, EyeOff, GraduationCap, ArrowLeft, User, Mail, Lock, MapPin, BookOpen, Check, CreditCard, Phone, UserCircle } from "lucide-react";
-import { senaPrograms, docTypes, titles } from "../data/users";
+import { Eye, EyeOff, GraduationCap, ArrowLeft, User, Mail, Lock, MapPin, BookOpen, Check, CreditCard, Phone } from "lucide-react";
+import { senaPrograms, docTypes } from "../data/users";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -16,7 +16,6 @@ export function RegisterPage() {
     email: "",
     docType: "" as string,
     docNum: "",
-    title: "" as string,
     phoneNum: "",
     // Additional fields
     country: "",
@@ -49,7 +48,6 @@ export function RegisterPage() {
     localStorage.setItem("userEmail", formData.email);
     localStorage.setItem("userDocType", formData.docType);
     localStorage.setItem("userDocNum", formData.docNum);
-    localStorage.setItem("userTitle", formData.title);
     localStorage.setItem("userPhoneNum", formData.phoneNum);
     localStorage.setItem("userRole", "student");
     localStorage.setItem("userId", Date.now().toString());
@@ -156,31 +154,10 @@ export function RegisterPage() {
           <p className="text-muted-foreground mb-8">Registrate para comenzar tu evaluacion</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Title & First Name Row */}
-            <div className="grid grid-cols-3 gap-4">
-              {/* Title */}
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-foreground mb-2">
-                  Titulo
-                </label>
-                <div className="relative">
-                  <UserCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <select
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full pl-12 pr-4 py-3.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 focus:border-sena-green transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="">-</option>
-                    {titles.map((t) => (
-                      <option key={t.value} value={t.value}>{t.value}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
+            {/* First Name & Last Name Row */}
+            <div className="grid grid-cols-2 gap-4">
               {/* First Name */}
-              <div className="col-span-2">
+              <div>
                 <label htmlFor="firstName" className="block text-sm font-medium text-foreground mb-2">
                   Nombres
                 </label>
@@ -197,24 +174,24 @@ export function RegisterPage() {
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Last Name */}
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-foreground mb-2">
-                Apellidos
-              </label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
-                  id="lastName"
-                  type="text"
-                  placeholder="Tus apellidos"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  required
-                  className="w-full pl-12 pr-4 py-3.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 focus:border-sena-green transition-all"
-                />
+              {/* Last Name */}
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-foreground mb-2">
+                  Apellidos
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <input
+                    id="lastName"
+                    type="text"
+                    placeholder="Tus apellidos"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    required
+                    className="w-full pl-12 pr-4 py-3.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 focus:border-sena-green transition-all"
+                  />
+                </div>
               </div>
             </div>
 

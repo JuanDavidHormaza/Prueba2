@@ -1,5 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import {
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  Legend, ResponsiveContainer, RadarChart, PolarGrid,
+  PolarAngleAxis, PolarRadiusAxis, Radar, ComposedChart,
+} from "recharts";
 import { useNavigate } from "react-router";
 import {
   LogOut, Users, Upload, FileText, Trash2, Plus, Search,
@@ -7,7 +13,8 @@ import {
   Check, Filter, Eye, ToggleLeft, ToggleRight,
   FolderOpen, Download, Play, Pause, Music, Video,
   Volume2, Film, BookA, Hash, FileEdit, Phone, CreditCard,
-  MessageSquare, Send, Globe, Type,
+  MessageSquare, Send, Globe, Type, TrendingUp, Activity,
+  PieChart as PieChartIcon, Target, Award, Calendar,
 } from "lucide-react";
 import {
   mockUsers, User, UserPermissions, getDefaultPermissions,
@@ -232,7 +239,7 @@ function DocumentCard({
 }
 
 // ─── Tipos aumentados ────────────────────────────────────────────────────────
-type TabType = "overview" | "users" | "documents" | "subjects" | "dictionary" | "posts";
+type TabType = "overview" | "analytics" | "users" | "documents" | "subjects" | "dictionary" | "posts";
 
 type ExtendedDocument = Document & {
   objectUrl?: string;
@@ -485,12 +492,13 @@ export function AdminDashboard() {
   };
 
   const tabs = [
-    { id: "overview",   label: "Resumen",     icon: BarChart3  },
-    { id: "users",      label: "Usuarios",    icon: Users      },
-    { id: "documents",  label: "Documentos",  icon: FileText   },
-    { id: "subjects",   label: "Asignaturas", icon: BookOpen   },
-    { id: "dictionary", label: "Diccionario", icon: BookA      },
-    { id: "posts",      label: "Posts",       icon: MessageSquare },
+    { id: "overview",   label: "Resumen",      icon: BarChart3  },
+    { id: "analytics",  label: "Estadisticas", icon: Activity   },
+    { id: "users",      label: "Usuarios",     icon: Users      },
+    { id: "documents",  label: "Documentos",   icon: FileText   },
+    { id: "subjects",   label: "Asignaturas",  icon: BookOpen   },
+    { id: "dictionary", label: "Diccionario",  icon: BookA      },
+    { id: "posts",      label: "Posts",        icon: MessageSquare },
   ];
 
   // ── Preview dentro del modal ───────────────────────────────────────────────
@@ -664,6 +672,340 @@ export function AdminDashboard() {
                       <Settings className="w-4 h-4" /> Gestionar
                     </button>
                   </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ══ Analytics ══ */}
+          {activeTab === "analytics" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Panel de Estadisticas</h2>
+                  <p className="text-muted-foreground">Analisis completo de la plataforma educativa</p>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white px-4 py-2 rounded-xl border border-border">
+                  <Calendar className="w-4 h-4" />
+                  <span>Ultimo mes</span>
+                </div>
+              </div>
+
+              {/* KPIs Row */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }} className="bg-white rounded-2xl p-5 border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 bg-sena-green/10 rounded-xl flex items-center justify-center">
+                      <Activity className="w-5 h-5 text-sena-green" />
+                    </div>
+                    <span className="text-xs font-medium text-sena-green bg-sena-green/10 px-2 py-1 rounded-full">+5.2%</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{Math.round((stats.activeUsers / stats.totalUsers) * 100)}%</p>
+                  <p className="text-sm text-muted-foreground">Tasa de Actividad</p>
+                </motion.div>
+
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-2xl p-5 border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 bg-sena-blue/10 rounded-xl flex items-center justify-center">
+                      <Target className="w-5 h-5 text-sena-blue" />
+                    </div>
+                    <span className="text-xs font-medium text-sena-blue bg-sena-blue/10 px-2 py-1 rounded-full">+3.1%</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">78.5</p>
+                  <p className="text-sm text-muted-foreground">Promedio Evaluaciones</p>
+                </motion.div>
+
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-2xl p-5 border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                      <Upload className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded-full">+12</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{stats.totalDocuments}</p>
+                  <p className="text-sm text-muted-foreground">Contenido Subido</p>
+                </motion.div>
+
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-white rounded-2xl p-5 border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                      <Award className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <span className="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-1 rounded-full">Estable</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">B1</p>
+                  <p className="text-sm text-muted-foreground">Nivel Promedio</p>
+                </motion.div>
+              </div>
+
+              {/* Charts Row 1 */}
+              <div className="grid lg:grid-cols-2 gap-6">
+                {/* Users by Program - Bar Chart */}
+                <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="font-semibold text-foreground">Usuarios por Programa</h3>
+                      <p className="text-sm text-muted-foreground">Distribucion de estudiantes</p>
+                    </div>
+                    <BarChart3 className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={(() => {
+                      const programCounts: Record<string, number> = {};
+                      users.forEach(u => {
+                        if (u.program) {
+                          const shortName = u.program.length > 15 ? u.program.substring(0, 15) + '...' : u.program;
+                          programCounts[shortName] = (programCounts[shortName] || 0) + 1;
+                        }
+                      });
+                      return Object.entries(programCounts).map(([name, count]) => ({ name, estudiantes: count }));
+                    })()} layout="vertical" margin={{ left: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis type="number" tick={{ fontSize: 12 }} />
+                      <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 11 }} />
+                      <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb' }} />
+                      <Bar dataKey="estudiantes" fill="#39A900" radius={[0, 6, 6, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* User Roles Distribution - Pie Chart */}
+                <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="font-semibold text-foreground">Distribucion de Roles</h3>
+                      <p className="text-sm text-muted-foreground">Administradores, docentes y estudiantes</p>
+                    </div>
+                    <PieChartIcon className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Estudiantes', value: stats.students, color: '#39A900' },
+                          { name: 'Docentes', value: stats.teachers, color: '#00324D' },
+                          { name: 'Admins', value: users.filter(u => u.role === 'admin').length, color: '#ef4444' },
+                        ]}
+                        cx="50%" cy="50%" innerRadius={60} outerRadius={100}
+                        paddingAngle={5} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={false}
+                      >
+                        {[
+                          { name: 'Estudiantes', value: stats.students, color: '#39A900' },
+                          { name: 'Docentes', value: stats.teachers, color: '#00324D' },
+                          { name: 'Admins', value: users.filter(u => u.role === 'admin').length, color: '#ef4444' },
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb' }} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Charts Row 2 */}
+              <div className="grid lg:grid-cols-3 gap-6">
+                {/* Activity Trend - Area Chart */}
+                <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="font-semibold text-foreground">Tendencia de Actividad</h3>
+                      <p className="text-sm text-muted-foreground">Evaluaciones y registros por mes</p>
+                    </div>
+                    <TrendingUp className="w-5 h-5 text-sena-green" />
+                  </div>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart data={[
+                      { mes: 'Ene', evaluaciones: 45, registros: 12 },
+                      { mes: 'Feb', evaluaciones: 52, registros: 18 },
+                      { mes: 'Mar', evaluaciones: 68, registros: 25 },
+                      { mes: 'Abr', evaluaciones: 85, registros: 32 },
+                      { mes: 'May', evaluaciones: 78, registros: 28 },
+                      { mes: 'Jun', evaluaciones: 92, registros: 35 },
+                    ]}>
+                      <defs>
+                        <linearGradient id="colorEval" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#39A900" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#39A900" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorReg" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#00324D" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#00324D" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb' }} />
+                      <Legend />
+                      <Area type="monotone" dataKey="evaluaciones" stroke="#39A900" fillOpacity={1} fill="url(#colorEval)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="registros" stroke="#00324D" fillOpacity={1} fill="url(#colorReg)" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Content Types - Donut */}
+                <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="font-semibold text-foreground">Tipos de Contenido</h3>
+                      <p className="text-sm text-muted-foreground">Documentos, audios y videos</p>
+                    </div>
+                    <FileText className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Documentos', value: stats.totalDocuments - stats.audios - stats.videos, color: '#39A900' },
+                          { name: 'Audios', value: stats.audios, color: '#9333ea' },
+                          { name: 'Videos', value: stats.videos, color: '#00324D' },
+                        ]}
+                        cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+                        paddingAngle={3} dataKey="value"
+                      >
+                        {[
+                          { name: 'Documentos', value: stats.totalDocuments - stats.audios - stats.videos, color: '#39A900' },
+                          { name: 'Audios', value: stats.audios, color: '#9333ea' },
+                          { name: 'Videos', value: stats.videos, color: '#00324D' },
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb' }} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Charts Row 3 - Advanced */}
+              <div className="grid lg:grid-cols-2 gap-6">
+                {/* Skills Radar Chart */}
+                <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="font-semibold text-foreground">Competencias por Nivel</h3>
+                      <p className="text-sm text-muted-foreground">Promedio de habilidades evaluadas</p>
+                    </div>
+                    <Target className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <RadarChart data={[
+                      { skill: 'Reading', A: 85, B: 70 },
+                      { skill: 'Writing', A: 78, B: 65 },
+                      { skill: 'Listening', A: 90, B: 80 },
+                      { skill: 'Speaking', A: 72, B: 60 },
+                      { skill: 'Grammar', A: 88, B: 75 },
+                      { skill: 'Vocabulary', A: 82, B: 68 },
+                    ]}>
+                      <PolarGrid stroke="#e5e7eb" />
+                      <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
+                      <Radar name="Nivel B2+" dataKey="A" stroke="#39A900" fill="#39A900" fillOpacity={0.3} strokeWidth={2} />
+                      <Radar name="Nivel B1" dataKey="B" stroke="#00324D" fill="#00324D" fillOpacity={0.2} strokeWidth={2} />
+                      <Legend />
+                      <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb' }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Performance by Subject - Composed Chart */}
+                <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="font-semibold text-foreground">Rendimiento por Asignatura</h3>
+                      <p className="text-sm text-muted-foreground">Evaluaciones y promedio de calificaciones</p>
+                    </div>
+                    <BookOpen className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ComposedChart data={subjects.map((s, i) => ({
+                      name: s.name.length > 10 ? s.name.substring(0, 10) + '...' : s.name,
+                      evaluaciones: Math.floor(Math.random() * 50) + 20,
+                      promedio: Math.floor(Math.random() * 30) + 65,
+                    }))}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+                      <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 12 }} />
+                      <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb' }} />
+                      <Legend />
+                      <Bar yAxisId="left" dataKey="evaluaciones" fill="#00324D" radius={[4, 4, 0, 0]} name="Evaluaciones" />
+                      <Line yAxisId="right" type="monotone" dataKey="promedio" stroke="#39A900" strokeWidth={3} dot={{ fill: '#39A900', strokeWidth: 2 }} name="Promedio %" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Students Performance Table */}
+              <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="font-semibold text-foreground">Rendimiento de Estudiantes</h3>
+                    <p className="text-sm text-muted-foreground">Top estudiantes por calificacion promedio</p>
+                  </div>
+                  <Award className="w-5 h-5 text-amber-500" />
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Posicion</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Estudiante</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Programa</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Nivel</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Promedio</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Progreso</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.filter(u => u.role === 'student').slice(0, 5).map((student, i) => {
+                        const score = Math.floor(Math.random() * 25) + 70;
+                        const level = score >= 90 ? 'C1' : score >= 80 ? 'B2' : score >= 70 ? 'B1' : 'A2';
+                        return (
+                          <tr key={student.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                                i === 0 ? 'bg-amber-100 text-amber-600' : i === 1 ? 'bg-gray-100 text-gray-600' : i === 2 ? 'bg-orange-100 text-orange-600' : 'bg-muted text-muted-foreground'
+                              }`}>
+                                {i + 1}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-sena-green rounded-lg flex items-center justify-center text-white font-medium text-sm">
+                                  {student.firstName.charAt(0)}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-foreground text-sm">{getFullName(student)}</p>
+                                  <p className="text-xs text-muted-foreground">{student.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-sm text-muted-foreground">{student.program || '-'}</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-1 rounded-lg text-xs font-bold ${
+                                level === 'C1' ? 'bg-sena-green/10 text-sena-green' :
+                                level === 'B2' ? 'bg-sena-blue/10 text-sena-blue' :
+                                'bg-amber-100 text-amber-600'
+                              }`}>
+                                {level}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-foreground">{score}%</td>
+                            <td className="py-3 px-4">
+                              <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                                <div className="h-full bg-sena-green rounded-full" style={{ width: `${score}%` }} />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </motion.div>
