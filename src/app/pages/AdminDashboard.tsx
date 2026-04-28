@@ -6,11 +6,14 @@ import {
   GraduationCap, BarChart3, BookOpen, Settings, X,
   Check, Filter, Eye, ToggleLeft, ToggleRight,
   FolderOpen, Download, Play, Pause, Music, Video,
-  Volume2, Film,
+  Volume2, Film, BookA, Hash, FileEdit, Phone, CreditCard,
+  MessageSquare, Send, Globe, Type,
 } from "lucide-react";
 import {
   mockUsers, User, UserPermissions, getDefaultPermissions,
   mockDocuments, Document, mockSubjects, Subject, senaPrograms,
+  docTypes, titles, DictionaryEntry, mockDictionaryEntries,
+  Post, mockPosts, getFullName,
 } from "../data/users";
 
 // ─── Tipos de archivo ────────────────────────────────────────────────────────
@@ -229,7 +232,7 @@ function DocumentCard({
 }
 
 // ─── Tipos aumentados ────────────────────────────────────────────────────────
-type TabType = "overview" | "users" | "documents" | "subjects";
+type TabType = "overview" | "users" | "documents" | "subjects" | "dictionary" | "posts";
 
 type ExtendedDocument = Document & {
   objectUrl?: string;
@@ -243,12 +246,16 @@ export function AdminDashboard() {
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [documents, setDocuments] = useState<ExtendedDocument[]>(mockDocuments);
   const [subjects, setSubjects] = useState<Subject[]>(mockSubjects);
+  const [dictionary, setDictionary] = useState<DictionaryEntry[]>(mockDictionaryEntries);
+  const [posts, setPosts] = useState<Post[]>(mockPosts);
 
   // Modal states
   const [showUserModal, setShowUserModal] = useState(false);
   const [showEditUserModal, setShowEditUserModal] = useState(false);
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showDictionaryModal, setShowDictionaryModal] = useState(false);
+  const [showPostModal, setShowPostModal] = useState(false);
 
   // Selected / search states
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -258,9 +265,18 @@ export function AdminDashboard() {
 
   // Form states
   const [newUser, setNewUser] = useState({
-    name: "", email: "", password: "",
+    firstName: "", lastName: "", email: "", password: "",
+    docType: "" as string, docNum: "", title: "" as string, phoneNum: "",
     role: "student" as "admin" | "teacher" | "student",
     country: "", program: "",
+  });
+
+  const [newDictionaryEntry, setNewDictionaryEntry] = useState({
+    wordId: "", subjectId: "", definition: "", synonyms: "",
+  });
+
+  const [newPost, setNewPost] = useState({
+    title: "", body: "", status: "draft" as "draft" | "published" | "archived",
   });
 
   const [newSubject, setNewSubject] = useState({ name: "", description: "", color: "#39A900" });
@@ -270,6 +286,10 @@ export function AdminDashboard() {
     subjectId: "",
     program: "",
     previewUrl: "",
+    // Digital Dictionary fields
+    wordId: "",
+    definition: "",
+    synonyms: "",
   });
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -305,14 +325,62 @@ export function AdminDashboard() {
     e.preventDefault();
     const user: User = {
       id: Date.now().toString(),
-      ...newUser,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      email: newUser.email,
+      password: newUser.password,
+      docType: newUser.docType as any,
+      docNum: newUser.docNum,
+      title: newUser.title as any,
+      phoneNum: newUser.phoneNum,
+      role: newUser.role,
+      country: newUser.country,
+      program: newUser.program,
       permissions: getDefaultPermissions(newUser.role),
       status: "active",
+      mfa: false,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setUsers([...users, user]);
     setShowUserModal(false);
-    setNewUser({ name: "", email: "", password: "", role: "student", country: "", program: "" });
+    setNewUser({ firstName: "", lastName: "", email: "", password: "", docType: "", docNum: "", title: "", phoneNum: "", role: "student", country: "", program: "" });
+  };
+
+  const handleAddDictionaryEntry = (e: React.FormEvent) => {
+    e.preventDefault();
+    const entry: DictionaryEntry = {
+      id: Date.now().toString(),
+      wordId: newDictionaryEntry.wordId,
+      subjectId: newDictionaryEntry.subjectId,
+      definition: newDictionaryEntry.definition,
+      synonyms: newDictionaryEntry.synonyms,
+    };
+    setDictionary([...dictionary, entry]);
+    setShowDictionaryModal(false);
+    setNewDictionaryEntry({ wordId: "", subjectId: "", definition: "", synonyms: "" });
+  };
+
+  const handleAddPost = (e: React.FormEvent) => {
+    e.preventDefault();
+    const post: Post = {
+      id: Date.now().toString(),
+      userId: "1", // Admin
+      title: newPost.title,
+      body: newPost.body,
+      status: newPost.status,
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+    setPosts([...posts, post]);
+    setShowPostModal(false);
+    setNewPost({ title: "", body: "", status: "draft" });
+  };
+
+  const handleDeleteDictionaryEntry = (id: string) => {
+    if (confirm("¿Eliminar esta entrada del diccionario?")) setDictionary(dictionary.filter((d) => d.id !== id));
+  };
+
+  const handleDeletePost = (id: string) => {
+    if (confirm("¿Eliminar este post?")) setPosts(posts.filter((p) => p.id !== id));
   };
 
   const handleAddSubject = (e: React.FormEvent) => {
@@ -360,9 +428,24 @@ export function AdminDashboard() {
       category: cat,
     };
 
+    // Also add to dictionary if wordId is provided
+    if (uploadForm.wordId && uploadForm.definition) {
+      const dictEntry: DictionaryEntry = {
+        id: `dict-${Date.now()}`,
+        wordId: uploadForm.wordId,
+        subjectId: uploadForm.subjectId,
+        definition: uploadForm.definition,
+        synonyms: uploadForm.synonyms,
+        audio: cat === "audio" ? uploadForm.previewUrl : undefined,
+        video: cat === "video" ? uploadForm.previewUrl : undefined,
+        image: cat === "document" ? undefined : undefined,
+      };
+      setDictionary([...dictionary, dictEntry]);
+    }
+
     setDocuments([...documents, newDoc]);
     setShowUploadModal(false);
-    setUploadForm({ file: null, subjectId: "", program: "", previewUrl: "" });
+    setUploadForm({ file: null, subjectId: "", program: "", previewUrl: "", wordId: "", definition: "", synonyms: "" });
   };
 
   const handleDeleteDocument = (docId: string) => {
@@ -396,6 +479,9 @@ export function AdminDashboard() {
     teachers: users.filter((u) => u.role === "teacher").length,
     audios: documents.filter((d) => (d.category ?? getFileCategory(d.name)) === "audio").length,
     videos: documents.filter((d) => (d.category ?? getFileCategory(d.name)) === "video").length,
+    dictionaryEntries: dictionary.length,
+    totalPosts: posts.length,
+    publishedPosts: posts.filter((p) => p.status === "published").length,
   };
 
   const tabs = [
@@ -403,6 +489,8 @@ export function AdminDashboard() {
     { id: "users",      label: "Usuarios",    icon: Users      },
     { id: "documents",  label: "Documentos",  icon: FileText   },
     { id: "subjects",   label: "Asignaturas", icon: BookOpen   },
+    { id: "dictionary", label: "Diccionario", icon: BookA      },
+    { id: "posts",      label: "Posts",       icon: MessageSquare },
   ];
 
   // ── Preview dentro del modal ───────────────────────────────────────────────
@@ -637,15 +725,16 @@ export function AdminDashboard() {
                       {filteredUsers.map((user) => (
                         <tr key={user.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                           <td className="py-4 px-5">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-medium ${user.role === "admin" ? "bg-destructive" : user.role === "teacher" ? "bg-sena-blue" : "bg-sena-green"}`}>
-                                {user.name.charAt(0).toUpperCase()}
-                              </div>
-                              <div>
-                                <p className="font-medium text-foreground">{user.name}</p>
-                                <p className="text-sm text-muted-foreground">{user.email}</p>
-                              </div>
-                            </div>
+<div className="flex items-center gap-3">
+                                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-medium ${user.role === "admin" ? "bg-destructive" : user.role === "teacher" ? "bg-sena-blue" : "bg-sena-green"}`}>
+                                                {user.firstName.charAt(0).toUpperCase()}
+                                              </div>
+                                              <div>
+                                                <p className="font-medium text-foreground">{user.title ? `${user.title} ` : ""}{getFullName(user)}</p>
+                                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                                                {user.docType && <p className="text-xs text-muted-foreground">{user.docType}: {user.docNum}</p>}
+                                              </div>
+                                            </div>
                           </td>
                           <td className="py-4 px-5">
                             <select
@@ -803,6 +892,137 @@ export function AdminDashboard() {
               </div>
             </motion.div>
           )}
+
+          {/* ══ Dictionary ══ */}
+          {activeTab === "dictionary" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Diccionario Digital</h2>
+                  <p className="text-muted-foreground">Gestiona vocabulario y definiciones por asignatura</p>
+                </div>
+                <button
+                  onClick={() => setShowDictionaryModal(true)}
+                  className="flex items-center gap-2 bg-sena-green text-white px-5 py-2.5 rounded-xl hover:bg-sena-green-dark transition-all font-medium shadow-lg shadow-sena-green/25"
+                >
+                  <Plus className="w-5 h-5" /> Nueva Entrada
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {dictionary.map((entry) => {
+                  const subject = subjects.find((s) => s.id === entry.subjectId);
+                  return (
+                    <motion.div key={entry.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl p-5 border border-border shadow-sm hover:shadow-md transition-all">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-12 h-12 bg-sena-blue/10 rounded-xl flex items-center justify-center">
+                          <BookA className="w-6 h-6 text-sena-blue" />
+                        </div>
+                        <button onClick={() => handleDeleteDictionaryEntry(entry.id)} className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Hash className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-bold text-sena-green">{entry.wordId}</span>
+                      </div>
+                      <p className="text-sm text-foreground mb-3 line-clamp-3">{entry.definition}</p>
+                      {entry.synonyms && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                          <Type className="w-3 h-3" />
+                          <span className="italic">{entry.synonyms}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 pt-3 border-t border-border">
+                        {subject && (
+                          <span className="text-xs px-2 py-1 rounded-lg" style={{ backgroundColor: `${subject.color}15`, color: subject.color }}>
+                            {subject.name}
+                          </span>
+                        )}
+                        {entry.audio && <Music className="w-4 h-4 text-purple-500" />}
+                        {entry.video && <Video className="w-4 h-4 text-sena-blue" />}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {dictionary.length === 0 && (
+                <div className="text-center py-12 bg-white rounded-2xl border border-border">
+                  <BookA className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold text-foreground mb-2">No hay entradas</h3>
+                  <p className="text-muted-foreground mb-4">Agrega la primera entrada al diccionario</p>
+                  <button onClick={() => setShowDictionaryModal(true)} className="inline-flex items-center gap-2 bg-sena-green text-white px-5 py-2.5 rounded-xl font-medium">
+                    <Plus className="w-5 h-5" /> Nueva Entrada
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* ══ Posts ══ */}
+          {activeTab === "posts" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Posts y Contenido</h2>
+                  <p className="text-muted-foreground">Gestiona publicaciones y articulos educativos</p>
+                </div>
+                <button
+                  onClick={() => setShowPostModal(true)}
+                  className="flex items-center gap-2 bg-sena-green text-white px-5 py-2.5 rounded-xl hover:bg-sena-green-dark transition-all font-medium shadow-lg shadow-sena-green/25"
+                >
+                  <Plus className="w-5 h-5" /> Nuevo Post
+                </button>
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-4">
+                {posts.map((post) => {
+                  const author = users.find((u) => u.id === post.userId);
+                  return (
+                    <motion.div key={post.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl p-5 border border-border shadow-sm hover:shadow-md transition-all">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className={`px-3 py-1 rounded-lg text-xs font-medium ${
+                          post.status === "published" ? "bg-sena-green/10 text-sena-green" :
+                          post.status === "draft" ? "bg-warning/10 text-warning" :
+                          "bg-muted text-muted-foreground"
+                        }`}>
+                          {post.status === "published" ? "Publicado" : post.status === "draft" ? "Borrador" : "Archivado"}
+                        </div>
+                        <button onClick={() => handleDeletePost(post.id)} className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <h4 className="font-semibold text-foreground mb-2 line-clamp-1">{post.title}</h4>
+                      {post.body && <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{post.body}</p>}
+                      <div className="flex items-center justify-between pt-4 border-t border-border">
+                        <div className="flex items-center gap-2">
+                          {author && (
+                            <div className="w-6 h-6 bg-sena-blue rounded-full flex items-center justify-center text-white text-xs font-medium">
+                              {author.firstName.charAt(0)}
+                            </div>
+                          )}
+                          <span className="text-xs text-muted-foreground">{author ? getFullName(author) : "Desconocido"}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{post.createdAt}</span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {posts.length === 0 && (
+                <div className="text-center py-12 bg-white rounded-2xl border border-border">
+                  <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold text-foreground mb-2">No hay posts</h3>
+                  <p className="text-muted-foreground mb-4">Crea tu primer post educativo</p>
+                  <button onClick={() => setShowPostModal(true)} className="inline-flex items-center gap-2 bg-sena-green text-white px-5 py-2.5 rounded-xl font-medium">
+                    <Plus className="w-5 h-5" /> Nuevo Post
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
         </div>
       </main>
 
@@ -815,17 +1035,49 @@ export function AdminDashboard() {
                 <h3 className="text-xl font-bold text-foreground">Agregar Usuario</h3>
                 <button onClick={() => setShowUserModal(false)} className="p-2 hover:bg-muted rounded-lg transition-colors"><X className="w-5 h-5" /></button>
               </div>
-              <form onSubmit={handleAddUser} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Nombre Completo</label>
-                  <input type="text" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
+              <form onSubmit={handleAddUser} className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Titulo</label>
+                    <select value={newUser.title} onChange={(e) => setNewUser({ ...newUser, title: e.target.value })} className="w-full px-3 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50">
+                      <option value="">-</option>
+                      {titles.map((t) => <option key={t.value} value={t.value}>{t.value}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Nombres</label>
+                    <input type="text" value={newUser.firstName} onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })} required placeholder="Juan David" className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
-                  <input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Apellidos</label>
+                  <input type="text" value={newUser.lastName} onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })} required placeholder="Perez Garcia" className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Tipo de Documento</label>
+                    <select value={newUser.docType} onChange={(e) => setNewUser({ ...newUser, docType: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50">
+                      <option value="">Seleccionar</option>
+                      {docTypes.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Numero Documento</label>
+                    <input type="text" value={newUser.docNum} onChange={(e) => setNewUser({ ...newUser, docNum: e.target.value })} required placeholder="1234567890" className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
+                    <input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} required placeholder="correo@email.com" className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Telefono</label>
+                    <input type="tel" value={newUser.phoneNum} onChange={(e) => setNewUser({ ...newUser, phoneNum: e.target.value })} placeholder="300 123 4567" className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Contraseña</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Contrasena</label>
                   <input type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -838,7 +1090,7 @@ export function AdminDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1.5">País</label>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Pais</label>
                     <input type="text" value={newUser.country} onChange={(e) => setNewUser({ ...newUser, country: e.target.value })} placeholder="Colombia" className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
                   </div>
                 </div>
@@ -867,7 +1119,7 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-xl font-bold text-foreground">Editar Permisos</h3>
-                  <p className="text-sm text-muted-foreground">{selectedUser.name}</p>
+                  <p className="text-sm text-muted-foreground">{getFullName(selectedUser)}</p>
                 </div>
                 <button onClick={() => { setShowEditUserModal(false); setSelectedUser(null); }} className="p-2 hover:bg-muted rounded-lg transition-colors"><X className="w-5 h-5" /></button>
               </div>
@@ -920,7 +1172,7 @@ export function AdminDashboard() {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-foreground">Subir Archivo</h3>
-                <button onClick={() => { setShowUploadModal(false); setUploadForm({ file: null, subjectId: "", program: "", previewUrl: "" }); }} className="p-2 hover:bg-muted rounded-lg transition-colors">
+                <button onClick={() => { setShowUploadModal(false); setUploadForm({ file: null, subjectId: "", program: "", previewUrl: "", wordId: "", definition: "", synonyms: "" }); }} className="p-2 hover:bg-muted rounded-lg transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -995,13 +1247,112 @@ export function AdminDashboard() {
                   </select>
                 </div>
 
+                {/* Digital Dictionary Fields (optional) */}
+                <div className="pt-4 border-t border-border">
+                  <p className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+                    <BookA className="w-4 h-4 text-sena-blue" />
+                    Diccionario Digital (opcional)
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">ID de Palabra</label>
+                      <input type="text" value={uploadForm.wordId} onChange={(e) => setUploadForm({ ...uploadForm, wordId: e.target.value })} placeholder="Ej: W001" className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sena-blue/50" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Definicion</label>
+                      <textarea value={uploadForm.definition} onChange={(e) => setUploadForm({ ...uploadForm, definition: e.target.value })} placeholder="Descripcion o definicion del termino..." rows={2} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sena-blue/50 resize-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Sinonimos</label>
+                      <input type="text" value={uploadForm.synonyms} onChange={(e) => setUploadForm({ ...uploadForm, synonyms: e.target.value })} placeholder="palabra1, palabra2, palabra3" className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sena-blue/50" />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex gap-3 pt-4">
                   <button type="submit" disabled={!uploadForm.file} className="flex-1 bg-sena-green text-white py-2.5 rounded-xl hover:bg-sena-green-dark transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed">
                     Subir Archivo
                   </button>
-                  <button type="button" onClick={() => { setShowUploadModal(false); setUploadForm({ file: null, subjectId: "", program: "", previewUrl: "" }); }} className="flex-1 bg-muted text-muted-foreground py-2.5 rounded-xl font-medium">
+                  <button type="button" onClick={() => { setShowUploadModal(false); setUploadForm({ file: null, subjectId: "", program: "", previewUrl: "", wordId: "", definition: "", synonyms: "" }); }} className="flex-1 bg-muted text-muted-foreground py-2.5 rounded-xl font-medium">
                     Cancelar
                   </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══ Modal: Nueva Entrada Diccionario ══ */}
+      <AnimatePresence>
+        {showDictionaryModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-foreground">Nueva Entrada de Diccionario</h3>
+                <button onClick={() => setShowDictionaryModal(false)} className="p-2 hover:bg-muted rounded-lg transition-colors"><X className="w-5 h-5" /></button>
+              </div>
+              <form onSubmit={handleAddDictionaryEntry} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">ID de Palabra</label>
+                    <input type="text" value={newDictionaryEntry.wordId} onChange={(e) => setNewDictionaryEntry({ ...newDictionaryEntry, wordId: e.target.value })} required placeholder="W001" className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Asignatura</label>
+                    <select value={newDictionaryEntry.subjectId} onChange={(e) => setNewDictionaryEntry({ ...newDictionaryEntry, subjectId: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50">
+                      <option value="">Seleccionar</option>
+                      {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Definicion</label>
+                  <textarea value={newDictionaryEntry.definition} onChange={(e) => setNewDictionaryEntry({ ...newDictionaryEntry, definition: e.target.value })} required rows={3} placeholder="Descripcion o significado del termino..." className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 resize-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Sinonimos (opcional)</label>
+                  <input type="text" value={newDictionaryEntry.synonyms} onChange={(e) => setNewDictionaryEntry({ ...newDictionaryEntry, synonyms: e.target.value })} placeholder="palabra1, palabra2, palabra3" className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button type="submit" className="flex-1 bg-sena-green text-white py-2.5 rounded-xl hover:bg-sena-green-dark transition-all font-medium">Agregar</button>
+                  <button type="button" onClick={() => setShowDictionaryModal(false)} className="flex-1 bg-muted text-muted-foreground py-2.5 rounded-xl font-medium">Cancelar</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══ Modal: Nuevo Post ══ */}
+      <AnimatePresence>
+        {showPostModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-foreground">Nuevo Post</h3>
+                <button onClick={() => setShowPostModal(false)} className="p-2 hover:bg-muted rounded-lg transition-colors"><X className="w-5 h-5" /></button>
+              </div>
+              <form onSubmit={handleAddPost} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Titulo</label>
+                  <input type="text" value={newPost.title} onChange={(e) => setNewPost({ ...newPost, title: e.target.value })} required placeholder="Titulo del post" className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Contenido</label>
+                  <textarea value={newPost.body} onChange={(e) => setNewPost({ ...newPost, body: e.target.value })} rows={5} placeholder="Escribe el contenido del post..." className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 resize-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Estado</label>
+                  <select value={newPost.status} onChange={(e) => setNewPost({ ...newPost, status: e.target.value as any })} className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50">
+                    <option value="draft">Borrador</option>
+                    <option value="published">Publicado</option>
+                    <option value="archived">Archivado</option>
+                  </select>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button type="submit" className="flex-1 bg-sena-green text-white py-2.5 rounded-xl hover:bg-sena-green-dark transition-all font-medium">Crear Post</button>
+                  <button type="button" onClick={() => setShowPostModal(false)} className="flex-1 bg-muted text-muted-foreground py-2.5 rounded-xl font-medium">Cancelar</button>
                 </div>
               </form>
             </motion.div>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { Eye, EyeOff, GraduationCap, Mail, Lock, ArrowLeft, AlertCircle } from "lucide-react";
-import { authenticateUser } from "../data/users";
+import { authenticateUser, getFullName } from "../data/users";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -25,10 +25,15 @@ export function LoginPage() {
     const user = authenticateUser(formData.email, formData.password);
     
     if (user) {
-      localStorage.setItem("userName", user.name);
+      localStorage.setItem("userName", getFullName(user));
+      localStorage.setItem("userFirstName", user.firstName);
+      localStorage.setItem("userLastName", user.lastName);
       localStorage.setItem("userRole", user.role);
       localStorage.setItem("userId", user.id);
       localStorage.setItem("userPermissions", JSON.stringify(user.permissions));
+      if (user.docType) localStorage.setItem("userDocType", user.docType);
+      if (user.docNum) localStorage.setItem("userDocNum", user.docNum);
+      if (user.phoneNum) localStorage.setItem("userPhoneNum", user.phoneNum);
       
       if (user.role === "admin") {
         navigate("/admin");

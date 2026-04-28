@@ -11,18 +11,69 @@ export interface UserPermissions {
   canConfigureLevels: boolean;
 }
 
+// Document types based on schema
+export type DocType = 'CC' | 'TI' | 'CE' | 'PP' | 'PEP';
+
+// Title/Treatment
+export type Title = 'Sr.' | 'Sra.' | 'Dr.' | 'Dra.' | 'Ing.' | 'Lic.' | 'Prof.';
+
 export interface User {
   id: string;
-  name: string;
+  // PERSONS table fields
   email: string;
   password: string;
+  docType?: DocType;
+  docNum?: string;
+  title?: Title;
+  firstName: string;
+  lastName: string;
+  phoneNum?: string;
+  // USERS table fields
   role: UserRole;
   country?: string;
   program?: string;
   permissions: UserPermissions;
   status: 'active' | 'inactive';
+  mfa?: boolean;
   createdAt: string;
   avatar?: string;
+}
+
+// Digital Dictionary entry based on schema
+export interface DictionaryEntry {
+  id: string;
+  wordId: string;
+  subjectId: string;
+  definition: string;
+  synonyms?: string;
+  audio?: string;
+  video?: string;
+  image?: string;
+}
+
+// Ranking entry based on schema
+export interface RankingEntry {
+  subjectId: string;
+  wordId: string;
+  level: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+  value: number;
+}
+
+// Post entry based on schema
+export interface Post {
+  id: string;
+  userId: string;
+  title: string;
+  body?: string;
+  status: 'draft' | 'published' | 'archived';
+  createdAt: string;
+}
+
+// User activity log based on schema
+export interface UserLog {
+  userId: string;
+  transaction: string;
+  createdAt: string;
 }
 
 export interface Subject {
@@ -137,34 +188,70 @@ export const mockSubjects: Subject[] = [
   },
 ];
 
+// Document type options
+export const docTypes: { value: DocType; label: string }[] = [
+  { value: 'CC', label: 'Cedula de Ciudadania' },
+  { value: 'TI', label: 'Tarjeta de Identidad' },
+  { value: 'CE', label: 'Cedula de Extranjeria' },
+  { value: 'PP', label: 'Pasaporte' },
+  { value: 'PEP', label: 'Permiso Especial de Permanencia' },
+];
+
+// Title options
+export const titles: { value: Title; label: string }[] = [
+  { value: 'Sr.', label: 'Senor' },
+  { value: 'Sra.', label: 'Senora' },
+  { value: 'Dr.', label: 'Doctor' },
+  { value: 'Dra.', label: 'Doctora' },
+  { value: 'Ing.', label: 'Ingeniero/a' },
+  { value: 'Lic.', label: 'Licenciado/a' },
+  { value: 'Prof.', label: 'Profesor/a' },
+];
+
 // Mock users database
 export const mockUsers: User[] = [
   {
     id: '1',
-    name: 'Administrador SENA',
+    firstName: 'Administrador',
+    lastName: 'SENA',
     email: 'admin@gmail.com',
     password: '123',
+    docType: 'CC',
+    docNum: '1234567890',
+    title: 'Ing.',
+    phoneNum: '3001234567',
     role: 'admin',
     permissions: getDefaultPermissions('admin'),
     status: 'active',
+    mfa: true,
     createdAt: '2026-01-01',
   },
   {
     id: '2',
-    name: 'Carlos Martinez',
+    firstName: 'Carlos',
+    lastName: 'Martinez',
     email: 'docente@gmail.com',
     password: '123',
+    docType: 'CC',
+    docNum: '9876543210',
+    title: 'Prof.',
+    phoneNum: '3109876543',
     role: 'teacher',
     program: 'Desarrollo de Software',
     permissions: getDefaultPermissions('teacher'),
     status: 'active',
+    mfa: false,
     createdAt: '2026-01-15',
   },
   {
     id: '3',
-    name: 'Juan David Perez',
+    firstName: 'Juan David',
+    lastName: 'Perez',
     email: 'juan@gmail.com',
     password: '123',
+    docType: 'TI',
+    docNum: '1098765432',
+    phoneNum: '3201234567',
     role: 'student',
     country: 'Colombia',
     program: 'Desarrollo de Software',
@@ -174,9 +261,13 @@ export const mockUsers: User[] = [
   },
   {
     id: '4',
-    name: 'Maria Garcia Lopez',
+    firstName: 'Maria',
+    lastName: 'Garcia Lopez',
     email: 'maria@gmail.com',
     password: '123',
+    docType: 'CC',
+    docNum: '1122334455',
+    phoneNum: '3156789012',
     role: 'student',
     country: 'Colombia',
     program: 'Analisis de Datos',
@@ -186,9 +277,13 @@ export const mockUsers: User[] = [
   },
   {
     id: '5',
-    name: 'Carlos Andres Lopez',
+    firstName: 'Carlos Andres',
+    lastName: 'Lopez',
     email: 'carlos@gmail.com',
     password: '123',
+    docType: 'CC',
+    docNum: '5544332211',
+    phoneNum: '3187654321',
     role: 'student',
     country: 'Colombia',
     program: 'Redes y Telecomunicaciones',
@@ -198,9 +293,14 @@ export const mockUsers: User[] = [
   },
   {
     id: '6',
-    name: 'Ana Sofia Rodriguez',
+    firstName: 'Ana Sofia',
+    lastName: 'Rodriguez',
     email: 'ana@gmail.com',
     password: '123',
+    docType: 'CC',
+    docNum: '6677889900',
+    title: 'Lic.',
+    phoneNum: '3123456789',
     role: 'teacher',
     program: 'Analisis de Datos',
     permissions: {
@@ -208,8 +308,53 @@ export const mockUsers: User[] = [
       canManageSubjects: true,
     },
     status: 'active',
+    mfa: true,
     createdAt: '2026-02-15',
   },
+];
+
+// Mock dictionary entries
+export const mockDictionaryEntries: DictionaryEntry[] = [
+  {
+    id: 'dict1',
+    wordId: 'W001',
+    subjectId: 'sub1',
+    definition: 'A systematic method or way of doing something.',
+    synonyms: 'approach, technique, procedure',
+  },
+  {
+    id: 'dict2',
+    wordId: 'W002',
+    subjectId: 'sub2',
+    definition: 'An action word that describes what the subject is doing.',
+    synonyms: 'action word, doing word',
+  },
+];
+
+// Mock posts
+export const mockPosts: Post[] = [
+  {
+    id: 'post1',
+    userId: '2',
+    title: 'Tips para mejorar tu pronunciacion',
+    body: 'En este articulo compartimos las mejores tecnicas para mejorar tu pronunciacion en ingles...',
+    status: 'published',
+    createdAt: '2026-04-10',
+  },
+  {
+    id: 'post2',
+    userId: '6',
+    title: 'Guia de Phrasal Verbs',
+    body: 'Los phrasal verbs son combinaciones de verbos con preposiciones o adverbios que cambian el significado...',
+    status: 'published',
+    createdAt: '2026-04-12',
+  },
+];
+
+// Mock rankings
+export const mockRankings: RankingEntry[] = [
+  { subjectId: 'sub1', wordId: 'W001', level: 'B1', value: 85 },
+  { subjectId: 'sub2', wordId: 'W002', level: 'A2', value: 70 },
 ];
 
 // Mock documents
@@ -312,6 +457,11 @@ export const mockTestResults: TestResult[] = [
     answers: [],
   },
 ];
+
+// Helper to get full name from user
+export const getFullName = (user: User): string => {
+  return `${user.firstName} ${user.lastName}`;
+};
 
 // SENA Programs
 export const senaPrograms = [

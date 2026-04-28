@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
-import { Eye, EyeOff, GraduationCap, ArrowLeft, User, Mail, Lock, MapPin, BookOpen, Check } from "lucide-react";
-import { senaPrograms } from "../data/users";
+import { Eye, EyeOff, GraduationCap, ArrowLeft, User, Mail, Lock, MapPin, BookOpen, Check, CreditCard, Phone, UserCircle } from "lucide-react";
+import { senaPrograms, docTypes, titles } from "../data/users";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -10,8 +10,15 @@ export function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: "",
+    // PERSONS fields
+    firstName: "",
+    lastName: "",
     email: "",
+    docType: "" as string,
+    docNum: "",
+    title: "" as string,
+    phoneNum: "",
+    // Additional fields
     country: "",
     program: "",
     password: "",
@@ -34,10 +41,20 @@ export function RegisterPage() {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    localStorage.setItem("userName", formData.fullName);
+    // Store user data following PERSONS/USERS schema
+    const fullName = `${formData.firstName} ${formData.lastName}`;
+    localStorage.setItem("userName", fullName);
+    localStorage.setItem("userFirstName", formData.firstName);
+    localStorage.setItem("userLastName", formData.lastName);
+    localStorage.setItem("userEmail", formData.email);
+    localStorage.setItem("userDocType", formData.docType);
+    localStorage.setItem("userDocNum", formData.docNum);
+    localStorage.setItem("userTitle", formData.title);
+    localStorage.setItem("userPhoneNum", formData.phoneNum);
     localStorage.setItem("userRole", "student");
     localStorage.setItem("userId", Date.now().toString());
     localStorage.setItem("userProgram", formData.program);
+    localStorage.setItem("userCountry", formData.country);
     
     navigate("/dashboard");
   };
@@ -139,41 +156,149 @@ export function RegisterPage() {
           <p className="text-muted-foreground mb-8">Registrate para comenzar tu evaluacion</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
+            {/* Title & First Name Row */}
+            <div className="grid grid-cols-3 gap-4">
+              {/* Title */}
+              <div>
+                <label htmlFor="title" className="block text-sm font-medium text-foreground mb-2">
+                  Titulo
+                </label>
+                <div className="relative">
+                  <UserCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <select
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full pl-12 pr-4 py-3.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 focus:border-sena-green transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">-</option>
+                    {titles.map((t) => (
+                      <option key={t.value} value={t.value}>{t.value}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* First Name */}
+              <div className="col-span-2">
+                <label htmlFor="firstName" className="block text-sm font-medium text-foreground mb-2">
+                  Nombres
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <input
+                    id="firstName"
+                    type="text"
+                    placeholder="Tus nombres"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    required
+                    className="w-full pl-12 pr-4 py-3.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 focus:border-sena-green transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Last Name */}
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-foreground mb-2">
-                Nombre Completo
+              <label htmlFor="lastName" className="block text-sm font-medium text-foreground mb-2">
+                Apellidos
               </label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
-                  id="fullName"
+                  id="lastName"
                   type="text"
-                  placeholder="Tu nombre completo"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  placeholder="Tus apellidos"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   required
                   className="w-full pl-12 pr-4 py-3.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 focus:border-sena-green transition-all"
                 />
               </div>
             </div>
 
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-                Correo Electronico
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="tu@correo.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                  className="w-full pl-12 pr-4 py-3.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 focus:border-sena-green transition-all"
-                />
+            {/* Document Type & Number Row */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Document Type */}
+              <div>
+                <label htmlFor="docType" className="block text-sm font-medium text-foreground mb-2">
+                  Tipo de Documento
+                </label>
+                <div className="relative">
+                  <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <select
+                    id="docType"
+                    value={formData.docType}
+                    onChange={(e) => setFormData({ ...formData, docType: e.target.value })}
+                    required
+                    className="w-full pl-12 pr-4 py-3.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 focus:border-sena-green transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">Seleccionar</option>
+                    {docTypes.map((doc) => (
+                      <option key={doc.value} value={doc.value}>{doc.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Document Number */}
+              <div>
+                <label htmlFor="docNum" className="block text-sm font-medium text-foreground mb-2">
+                  Numero de Documento
+                </label>
+                <div className="relative">
+                  <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <input
+                    id="docNum"
+                    type="text"
+                    placeholder="Numero de documento"
+                    value={formData.docNum}
+                    onChange={(e) => setFormData({ ...formData, docNum: e.target.value })}
+                    required
+                    className="w-full pl-12 pr-4 py-3.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 focus:border-sena-green transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Email & Phone Row */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+                  Correo Electronico
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="tu@correo.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                    className="w-full pl-12 pr-4 py-3.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 focus:border-sena-green transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label htmlFor="phoneNum" className="block text-sm font-medium text-foreground mb-2">
+                  Telefono
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <input
+                    id="phoneNum"
+                    type="tel"
+                    placeholder="300 123 4567"
+                    value={formData.phoneNum}
+                    onChange={(e) => setFormData({ ...formData, phoneNum: e.target.value })}
+                    className="w-full pl-12 pr-4 py-3.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-sena-green/50 focus:border-sena-green transition-all"
+                  />
+                </div>
               </div>
             </div>
 

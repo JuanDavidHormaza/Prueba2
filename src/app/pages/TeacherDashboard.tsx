@@ -6,7 +6,7 @@ import {
   GraduationCap, Users, BarChart3, TrendingUp, Send, X, Clock,
   Award, ChevronDown, Filter
 } from "lucide-react";
-import { mockTestResults, TestResult, mockUsers } from "../data/users";
+import { mockTestResults, TestResult, mockUsers, getFullName } from "../data/users";
 
 export function TeacherDashboard() {
   const navigate = useNavigate();
@@ -222,11 +222,11 @@ export function TeacherDashboard() {
                 <div className="p-5 border-b border-border bg-muted/30">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-sena-green rounded-xl flex items-center justify-center text-white font-medium text-lg">
-                        {userResults[0].userName.charAt(0)}
-                      </div>
+<div className="w-12 h-12 bg-sena-green rounded-xl flex items-center justify-center text-white font-medium text-lg">
+                                        {student ? student.firstName.charAt(0) : userResults[0].userName.charAt(0)}
+                                      </div>
                       <div>
-                        <h3 className="font-semibold text-foreground">{userResults[0].userName}</h3>
+                        <h3 className="font-semibold text-foreground">{student ? getFullName(student) : userResults[0].userName}</h3>
                         <p className="text-sm text-muted-foreground">
                           {student?.program || 'Programa SENA'} - {userResults.length} prueba{userResults.length !== 1 ? 's' : ''}
                         </p>
