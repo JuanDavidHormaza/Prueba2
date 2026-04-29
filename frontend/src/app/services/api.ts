@@ -94,48 +94,45 @@ class ApiService {
     return !!this.accessToken;
   }
 
-  // Login - obtener tokens JWT
-  async login(email: string, password: string): Promise<{ success: boolean; error?: string; user?: { role: string; name: string } }> {
+  // Login - usar endpoint personalizado que devuelve tokens y user info
+  async login(email: string, password: string): Promise<{ success: boolean; error?: string; user?: { role: string; name: string; id: number; email: string } }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/token/`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          username: email, // Django JWT usa username por defecto
+          username: email,
+          email: email,
           password 
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
         return { 
           success: false, 
-          error: errorData.detail || 'Credenciales incorrectas' 
+          error: data.error || 'Credenciales incorrectas' 
         };
       }
 
-      const data: TokenResponse = await response.json();
-      this.saveTokens(data.access, data.refresh);
-
-      // Obtener informacion del perfil del usuario
-      const profileResponse = await this.getProfile();
+      // Guardar tokens
+      this.saveTokens(data.tokens.access, data.tokens.refresh);
       
-      if (profileResponse.success && profileResponse.data) {
-        return { 
-          success: true,
-          user: {
-            role: profileResponse.data.role || 'student',
-            name: profileResponse.data.user || email
-          }
-        };
-      }
+      // Guardar info del usuario en localStorage
+      const user = data.user;
+      localStorage.setItem('userName', `${user.first_name} ${user.last_name}`.trim() || user.username);
+      localStorage.setItem('userRole', user.role);
+      localStorage.setItem('userId', user.id.toString());
+      localStorage.setItem('userEmail', user.email);
 
-      // Si no se puede obtener el perfil, usar datos basicos
       return { 
         success: true,
         user: {
-          role: 'student',
-          name: email.split('@')[0]
+          id: user.id,
+          role: user.role,
+          name: `${user.first_name} ${user.last_name}`.trim() || user.username,
+          email: user.email
         }
       };
     } catch (error) {
@@ -174,9 +171,9 @@ class ApiService {
   }
 
   // Obtener perfil del usuario autenticado
-  async getProfile(): Promise<{ success: boolean; data?: { user: string; role: string }; error?: string }> {
+  async getProfile(): Promise<{ success: boolean; data?: { id: number; username: string; email: string; first_name: string; last_name: string; role: string }; error?: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/perfil/`, {
+      const response = await fetch(`${API_BASE_URL}/auth/profile/`, {
         method: 'GET',
         headers: this.getHeaders(),
       });
@@ -195,7 +192,7 @@ class ApiService {
       }
 
       const data = await response.json();
-      return { success: true, data };
+      return { success: true, data: data.user };
     } catch (error) {
       console.error('Error al obtener perfil:', error);
       return { success: false, error: 'Error de conexion' };
@@ -213,28 +210,45 @@ class ApiService {
     phoneNum?: string;
   }): Promise<{ success: boolean; error?: string }> {
     try {
-      // Crear persona primero
-      const personResponse = await fetch(`${API_BASE_URL}/persons/create/`, {
+      const response = await fetch(`${API_BASE_URL}/auth/register/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          username: userData.email, // Usar email como username
           email: userData.email,
           password: userData.password,
-          doc_type: userData.docType,
-          doc_num: userData.docNum,
           first_name: userData.firstName,
           last_name: userData.lastName,
-          phone_num: userData.phoneNum ? parseInt(userData.phoneNum) : null,
-          status: 'ACTIVO',
+          doc_type: userData.docType,
+          doc_num: userData.docNum,
+          phone_num: userData.phoneNum || null,
+          role: 'APRENDIZ', // Rol por defecto para nuevos usuarios
         }),
       });
 
-      if (!personResponse.ok) {
-        const errorData = await personResponse.json().catch(() => ({}));
-        return { 
-          success: false, 
-          error: errorData.error || 'Error al crear el usuario' 
-        };
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        // Formatear errores del serializer
+        let errorMsg = 'Error al crear el usuario';
+        if (data.errors) {
+          const firstError = Object.values(data.errors)[0];
+          if (Array.isArray(firstError)) {
+            errorMsg = firstError[0] as string;
+          }
+        }
+        return { success: false, error: errorMsg };
+      }
+
+      // Guardar tokens si el registro los devuelve
+      if (data.tokens) {
+        this.saveTokens(data.tokens.access, data.tokens.refresh);
+        
+        const user = data.user;
+        localStorage.setItem('userName', `${user.first_name} ${user.last_name}`.trim() || user.username);
+        localStorage.setItem('userRole', user.role);
+        localStorage.setItem('userId', user.id.toString());
+        localStorage.setItem('userEmail', user.email);
       }
 
       return { success: true };
@@ -260,7 +274,7 @@ class ApiService {
       }
 
       const data = await response.json();
-      return { success: true, data };
+      return { success: true, data: data.data || data };
     } catch (error) {
       console.error('Error al obtener personas:', error);
       return { success: false, error: 'Error de conexion' };
@@ -280,7 +294,7 @@ class ApiService {
       }
 
       const data = await response.json();
-      return { success: true, data };
+      return { success: true, data: data.data || data };
     } catch (error) {
       console.error('Error al obtener usuarios:', error);
       return { success: false, error: 'Error de conexion' };
@@ -300,7 +314,7 @@ class ApiService {
       }
 
       const data = await response.json();
-      return { success: true, data };
+      return { success: true, data: data.data || data };
     } catch (error) {
       console.error('Error al obtener materias:', error);
       return { success: false, error: 'Error de conexion' };
@@ -320,7 +334,7 @@ class ApiService {
       }
 
       const data = await response.json();
-      return { success: true, data };
+      return { success: true, data: data.data || data };
     } catch (error) {
       console.error('Error al obtener diccionario:', error);
       return { success: false, error: 'Error de conexion' };

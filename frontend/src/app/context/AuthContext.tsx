@@ -82,17 +82,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       const authUser: AuthUser = {
+        id: result.user.id?.toString(),
         name: result.user.name,
-        email: email,
+        email: result.user.email || email,
         role: mappedRole,
       };
       
       setUser(authUser);
       
-      // Guardar en localStorage
-      localStorage.setItem('userName', authUser.name);
+      // Los datos ya se guardan en localStorage desde el apiService
+      // Solo actualizamos el rol mapeado
       localStorage.setItem('userRole', mappedRole);
-      localStorage.setItem('userEmail', email);
     }
     
     setIsLoading(false);
@@ -112,14 +112,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const result = await apiService.register(userData);
     
     if (result.success) {
-      // Despues del registro, hacer login automatico
-      const loginResult = await login(userData.email, userData.password);
-      if (loginResult.success) {
-        // Actualizar nombre con el nombre completo
-        const fullName = `${userData.firstName} ${userData.lastName}`;
-        localStorage.setItem('userName', fullName);
-        setUser(prev => prev ? { ...prev, name: fullName } : null);
-      }
+      // El registro ya guarda los tokens y datos en localStorage
+      // Solo necesitamos actualizar el estado del usuario
+      const fullName = `${userData.firstName} ${userData.lastName}`;
+      const userRole = localStorage.getItem('userRole') as UserRole || 'APRENDIZ';
+      const userId = localStorage.getItem('userId');
+      
+      setUser({
+        id: userId || undefined,
+        name: fullName,
+        email: userData.email,
+        role: userRole === 'APRENDIZ' ? 'student' : userRole,
+      });
     }
     
     setIsLoading(false);
