@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { Eye, EyeOff, GraduationCap, Mail, Lock, ArrowLeft, AlertCircle } from "lucide-react";
-import { authenticateUser } from "../data/users";
+import { useAuth } from "../context/AuthContext";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { login, user, isAuthenticated, isLoading: authLoading, error: authError, clearError } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -14,22 +15,9 @@ export function LoginPage() {
   });
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
-    
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const user = authenticateUser(formData.email, formData.password);
-    
-    if (user) {
-      localStorage.setItem("userName", user.name);
-      localStorage.setItem("userRole", user.role);
-      localStorage.setItem("userId", user.id);
-      localStorage.setItem("userPermissions", JSON.stringify(user.permissions));
-      
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
       if (user.role === "admin") {
         navigate("/admin");
       } else if (user.role === "teacher") {
@@ -37,12 +25,41 @@ export function LoginPage() {
       } else {
         navigate("/dashboard");
       }
-    } else {
-      setError("Credenciales incorrectas o cuenta inactiva. Por favor, verifica tus datos.");
     }
+  }, [isAuthenticated, user, navigate]);
+
+  // Show auth errors
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+      clearError();
+    }
+  }, [authError, clearError]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
     
-    setIsLoading(false);
+    try {
+      await login(formData.email, formData.password);
+      // Navigation will happen via the useEffect above
+    } catch {
+      // Error is already handled in AuthContext
+      setError("Credenciales incorrectas o cuenta inactiva. Por favor, verifica tus datos.");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // Don't render if checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-sena-green border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">

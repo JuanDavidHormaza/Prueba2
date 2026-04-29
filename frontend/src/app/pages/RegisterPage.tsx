@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
-import { Eye, EyeOff, GraduationCap, ArrowLeft, User, Mail, Lock, MapPin, BookOpen, Check, CreditCard, Phone } from "lucide-react";
+import { Eye, EyeOff, GraduationCap, ArrowLeft, User, Mail, Lock, MapPin, BookOpen, Check, CreditCard, Phone, AlertCircle } from "lucide-react";
 import { senaPrograms } from "../data/users";
+import { useAuth } from "../context/AuthContext";
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const { register, user, isAuthenticated, isLoading: authLoading, error: authError, clearError } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [step, setStep] = useState(1); // Wizard de registro en 2 pasos
   const [formData, setFormData] = useState({
     // Datos personales (PERSONS)
@@ -21,37 +24,85 @@ export function RegisterPage() {
     country: "",
     program: "",
     // Credenciales
+    username: "",
     password: "",
     confirmPassword: "",
     acceptTerms: false,
   });
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === "admin") {
+        navigate("/admin");
+      } else if (user.role === "teacher") {
+        navigate("/teacher");
+      } else {
+        navigate("/dashboard");
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  // Show auth errors
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+      clearError();
+    }
+  }, [authError, clearError]);
+
+  // Generate username from email
+  useEffect(() => {
+    if (formData.email && !formData.username) {
+      const username = formData.email.split('@')[0];
+      setFormData(prev => ({ ...prev, username }));
+    }
+  }, [formData.email, formData.username]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     
     if (formData.password !== formData.confirmPassword) {
-      alert("Las contrasenas no coinciden");
+      setError("Las contrasenas no coinciden");
       return;
     }
     if (!formData.acceptTerms) {
-      alert("Debes aceptar los terminos y condiciones");
+      setError("Debes aceptar los terminos y condiciones");
       return;
     }
     
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
     
-    const fullName = `${formData.firstName} ${formData.lastName}`;
-    localStorage.setItem("userName", fullName);
-    localStorage.setItem("userRole", "student");
-    localStorage.setItem("userId", Date.now().toString());
-    localStorage.setItem("userProgram", formData.program);
-    localStorage.setItem("userDocType", formData.docType);
-    localStorage.setItem("userDocNum", formData.docNum);
-    localStorage.setItem("userPhone", formData.phoneNum);
-    
-    navigate("/dashboard");
+    try {
+      await register({
+        username: formData.username || formData.email.split('@')[0],
+        email: formData.email,
+        password: formData.password,
+        password2: formData.confirmPassword,
+        doc_type: formData.docType,
+        doc_num: formData.docNum,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone_num: formData.phoneNum ? parseInt(formData.phoneNum) : undefined,
+        role: 'APRENDIZ', // Default role for new registrations
+      });
+      // Navigation will happen via the useEffect above
+    } catch {
+      setError("Error al registrarse. Verifica que tus datos sean correctos.");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // Don't render if checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-sena-green border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
@@ -378,6 +429,18 @@ export function RegisterPage() {
               onSubmit={handleSubmit} 
               className="space-y-4"
             >
+              {/* Error Alert */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3"
+                >
+                  <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-destructive">{error}</p>
+                </motion.div>
+              )}
+
               {/* Summary Card */}
               <div className="bg-sena-green/5 border border-sena-green/20 rounded-xl p-4 mb-2">
                 <p className="text-sm text-muted-foreground mb-1">Registrando como:</p>

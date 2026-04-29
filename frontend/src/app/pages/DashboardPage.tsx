@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { 
@@ -6,20 +6,43 @@ import {
   GraduationCap, Clock, ChevronRight, Play, History, MessageSquare,
   TrendingUp, Award, Calendar
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { api, ApiStats } from "../services/api";
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
-  const userName = localStorage.getItem("userName") || "Usuario";
-  const userProgram = localStorage.getItem("userProgram") || "Desarrollo de Software";
+  const [apiStats, setApiStats] = useState<ApiStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const userName = user?.name || "Usuario";
+  const userProgram = "Desarrollo de Software"; // This could come from person data if needed
 
-  // Mock data
+  // Fetch stats from API
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await api.getStats();
+        setApiStats(data);
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  // Stats data (mix of API and mock for now)
   const stats = {
     testsCompleted: 3,
     averageScore: 72,
     currentLevel: "B2",
     currentStreak: 5,
     improvement: 12,
+    totalUsers: apiStats?.totals.users || 0,
+    totalSubjects: apiStats?.totals.subjects || 0,
   };
 
   const recentTests = [
@@ -33,9 +56,17 @@ export function DashboardPage() {
   ];
 
   const handleLogout = () => {
-    localStorage.clear();
+    logout();
     navigate("/");
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-sena-green border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

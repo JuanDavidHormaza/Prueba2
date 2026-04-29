@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router";
 import {
@@ -7,13 +7,15 @@ import {
   Check, Filter, Eye, ToggleLeft, ToggleRight,
   FolderOpen, Download, Play, Pause, Music, Video,
   Volume2, Film, TrendingUp, PieChart, Activity, Calendar,
-  Award, Target, Zap, ChevronUp, ChevronDown,
+  Award, Target, Zap, ChevronUp, ChevronDown, Loader2,
 } from "lucide-react";
 import {
   mockUsers, User, UserPermissions, getDefaultPermissions,
   mockDocuments, Document, mockSubjects, Subject, senaPrograms,
   mockTestResults,
 } from "../data/users";
+import { useAuth } from "../context/AuthContext";
+import { api, ApiStats, ApiSenaUser, ApiSubject, ApiDictionaryEntry } from "../services/api";
 import {
   AreaChart, Area, BarChart, Bar, PieChart as RechartsPie, Pie, Cell,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -303,10 +305,54 @@ type ExtendedDocument = Document & {
 // ════════════════════════════════════════════════════════════════════════════
 export function AdminDashboard() {
   const navigate = useNavigate();
+  const { user: authUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [documents, setDocuments] = useState<ExtendedDocument[]>(mockDocuments);
   const [subjects, setSubjects] = useState<Subject[]>(mockSubjects);
+  
+  // API data state
+  const [apiStats, setApiStats] = useState<ApiStats | null>(null);
+  const [apiUsers, setApiUsers] = useState<ApiSenaUser[]>([]);
+  const [apiSubjects, setApiSubjects] = useState<ApiSubject[]>([]);
+  const [apiDictionary, setApiDictionary] = useState<ApiDictionaryEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Fetch data from API on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const [stats, senaUsers, subjectsData, dictData] = await Promise.all([
+          api.getStats(),
+          api.getSenaUsers(),
+          api.getSubjects(),
+          api.getDictionary(),
+        ]);
+        setApiStats(stats);
+        setApiUsers(senaUsers);
+        setApiSubjects(subjectsData);
+        setApiDictionary(dictData);
+        
+        // Map API subjects to frontend format
+        setSubjects(subjectsData.map((s, i) => ({
+          id: s.subject_id,
+          name: s.subject_id,
+          description: s.description,
+          color: ['#39A900', '#1F4E78', '#D89E00', '#E21B3C'][i % 4],
+          createdAt: new Date().toISOString().split('T')[0],
+        })));
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Error al cargar datos. Usando datos de ejemplo.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Modal states
   const [showUserModal, setShowUserModal] = useState(false);
@@ -341,7 +387,7 @@ export function AdminDashboard() {
   });
 
   // ── Handlers ──────────────────────────────────────────────────────────────
-  const handleLogout = () => { localStorage.clear(); navigate("/"); };
+  const handleLogout = () => { logout(); navigate("/"); };
 
   const handleDeleteUser = (userId: string) => {
     if (confirm("¿Eliminar este usuario?")) setUsers(users.filter((u) => u.id !== userId));
