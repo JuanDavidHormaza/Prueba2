@@ -113,3 +113,28 @@ class UserLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     transaction = models.CharField(max_length=255)
     created_at = models.DateTimeField(default=timezone.now)
+
+
+class TestResult(models.Model):
+    """Stores quiz/test results for students."""
+    result_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, related_name='test_results')
+    
+    score = models.IntegerField()  # Percentage 0-100
+    level = models.CharField(max_length=10)  # A1, A2, B1, B2, C1, C2
+    correct_answers = models.IntegerField()
+    total_questions = models.IntegerField()
+    
+    # Store answers as JSON
+    answers = models.JSONField(default=list, blank=True)
+    
+    feedback = models.TextField(null=True, blank=True)
+    duration = models.CharField(max_length=20, null=True, blank=True)  # Format: "8:45"
+    
+    completed_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        ordering = ['-completed_at']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.level} ({self.score}%)"

@@ -2,10 +2,11 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { Eye, EyeOff, GraduationCap, Mail, Lock, ArrowLeft, AlertCircle } from "lucide-react";
-import { authenticateUser } from "../data/users";
+import { useAuth } from "../contexts/AuthContext";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,26 +20,21 @@ export function LoginPage() {
     setError("");
     setIsLoading(true);
     
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const result = await login(formData.email, formData.password);
     
-    const user = authenticateUser(formData.email, formData.password);
-    
-    if (user) {
-      localStorage.setItem("userName", user.name);
-      localStorage.setItem("userRole", user.role);
-      localStorage.setItem("userId", user.id);
-      localStorage.setItem("userPermissions", JSON.stringify(user.permissions));
+    if (result.success) {
+      // Get user role from localStorage (set by AuthContext)
+      const userRole = localStorage.getItem("userRole");
       
-      if (user.role === "admin") {
+      if (userRole === "admin") {
         navigate("/admin");
-      } else if (user.role === "teacher") {
+      } else if (userRole === "teacher") {
         navigate("/teacher");
       } else {
         navigate("/dashboard");
       }
     } else {
-      setError("Credenciales incorrectas o cuenta inactiva. Por favor, verifica tus datos.");
+      setError(result.error || "Credenciales incorrectas o cuenta inactiva. Por favor, verifica tus datos.");
     }
     
     setIsLoading(false);

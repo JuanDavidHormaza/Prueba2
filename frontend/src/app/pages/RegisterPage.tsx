@@ -1,14 +1,30 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
-import { Eye, EyeOff, GraduationCap, ArrowLeft, User, Mail, Lock, MapPin, BookOpen, Check, CreditCard, Phone } from "lucide-react";
-import { senaPrograms } from "../data/users";
+import { Eye, EyeOff, GraduationCap, ArrowLeft, User, Mail, Lock, MapPin, BookOpen, Check, CreditCard, Phone, AlertCircle } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+
+// SENA Programs
+const senaPrograms = [
+  'Desarrollo de Software',
+  'Analisis de Datos',
+  'Redes y Telecomunicaciones',
+  'Diseno Grafico',
+  'Marketing Digital',
+  'Contabilidad y Finanzas',
+  'Gestion Empresarial',
+  'Produccion Multimedia',
+  'Seguridad Informatica',
+  'Automatizacion Industrial',
+];
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [step, setStep] = useState(1); // Wizard de registro en 2 pasos
   const [formData, setFormData] = useState({
     // Datos personales (PERSONS)
@@ -28,29 +44,40 @@ export function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     
     if (formData.password !== formData.confirmPassword) {
-      alert("Las contrasenas no coinciden");
+      setError("Las contrasenas no coinciden");
       return;
     }
     if (!formData.acceptTerms) {
-      alert("Debes aceptar los terminos y condiciones");
+      setError("Debes aceptar los terminos y condiciones");
       return;
     }
     
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
     
-    const fullName = `${formData.firstName} ${formData.lastName}`;
-    localStorage.setItem("userName", fullName);
-    localStorage.setItem("userRole", "student");
-    localStorage.setItem("userId", Date.now().toString());
-    localStorage.setItem("userProgram", formData.program);
-    localStorage.setItem("userDocType", formData.docType);
-    localStorage.setItem("userDocNum", formData.docNum);
-    localStorage.setItem("userPhone", formData.phoneNum);
+    const result = await register({
+      username: formData.email, // Using email as username
+      email: formData.email,
+      password: formData.password,
+      role: 'student', // New registrations are always students
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      doc_type: formData.docType || 'CC',
+      doc_num: formData.docNum,
+      phone_num: formData.phoneNum ? parseInt(formData.phoneNum) : undefined,
+      program: formData.program,
+    });
     
-    navigate("/dashboard");
+    if (result.success) {
+      // Redirect to login after successful registration
+      navigate("/login", { state: { message: "Cuenta creada exitosamente. Por favor inicia sesion." } });
+    } else {
+      setError(result.error || "Error al crear la cuenta. Por favor intenta de nuevo.");
+    }
+    
+    setIsLoading(false);
   };
 
   const handleNextStep = (e: React.FormEvent) => {
@@ -378,6 +405,18 @@ export function RegisterPage() {
               onSubmit={handleSubmit} 
               className="space-y-4"
             >
+              {/* Error Alert */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3"
+                >
+                  <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-destructive">{error}</p>
+                </motion.div>
+              )}
+
               {/* Summary Card */}
               <div className="bg-sena-green/5 border border-sena-green/20 rounded-xl p-4 mb-2">
                 <p className="text-sm text-muted-foreground mb-1">Registrando como:</p>
