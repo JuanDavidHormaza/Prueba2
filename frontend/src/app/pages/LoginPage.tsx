@@ -2,10 +2,12 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { Eye, EyeOff, GraduationCap, Mail, Lock, ArrowLeft, AlertCircle } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import { authenticateUser } from "../data/users";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,26 +21,41 @@ export function LoginPage() {
     setError("");
     setIsLoading(true);
     
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Primero intentar con el backend
+    const apiResult = await login(formData.email, formData.password);
     
-    const user = authenticateUser(formData.email, formData.password);
-    
-    if (user) {
-      localStorage.setItem("userName", user.name);
-      localStorage.setItem("userRole", user.role);
-      localStorage.setItem("userId", user.id);
-      localStorage.setItem("userPermissions", JSON.stringify(user.permissions));
+    if (apiResult.success) {
+      const userRole = localStorage.getItem("userRole");
       
-      if (user.role === "admin") {
+      if (userRole === "admin" || userRole === "ADMIN") {
         navigate("/admin");
-      } else if (user.role === "teacher") {
+      } else if (userRole === "teacher" || userRole === "INSTRUCTOR" || userRole === "MONITOR") {
+        navigate("/teacher");
+      } else {
+        navigate("/dashboard");
+      }
+      setIsLoading(false);
+      return;
+    }
+    
+    // Si el backend falla, usar autenticacion local como fallback para desarrollo
+    const localUser = authenticateUser(formData.email, formData.password);
+    
+    if (localUser) {
+      localStorage.setItem("userName", localUser.name);
+      localStorage.setItem("userRole", localUser.role);
+      localStorage.setItem("userId", localUser.id);
+      localStorage.setItem("userPermissions", JSON.stringify(localUser.permissions));
+      
+      if (localUser.role === "admin") {
+        navigate("/admin");
+      } else if (localUser.role === "teacher") {
         navigate("/teacher");
       } else {
         navigate("/dashboard");
       }
     } else {
-      setError("Credenciales incorrectas o cuenta inactiva. Por favor, verifica tus datos.");
+      setError(apiResult.error || "Credenciales incorrectas o cuenta inactiva. Por favor, verifica tus datos.");
     }
     
     setIsLoading(false);

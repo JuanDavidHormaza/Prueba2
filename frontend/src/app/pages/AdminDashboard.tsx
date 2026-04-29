@@ -14,6 +14,7 @@ import {
   mockDocuments, Document, mockSubjects, Subject, senaPrograms,
   mockTestResults,
 } from "../data/users";
+import { useAuth } from "../context/AuthContext";
 import {
   AreaChart, Area, BarChart, Bar, PieChart as RechartsPie, Pie, Cell,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -303,6 +304,7 @@ type ExtendedDocument = Document & {
 // ════════════════════════════════════════════════════════════════════════════
 export function AdminDashboard() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [documents, setDocuments] = useState<ExtendedDocument[]>(mockDocuments);
@@ -341,7 +343,7 @@ export function AdminDashboard() {
   });
 
   // ── Handlers ──────────────────────────────────────────────────────────────
-  const handleLogout = () => { localStorage.clear(); navigate("/"); };
+  const handleLogout = () => { logout(); localStorage.clear(); navigate("/"); };
 
   const handleDeleteUser = (userId: string) => {
     if (confirm("¿Eliminar este usuario?")) setUsers(users.filter((u) => u.id !== userId));

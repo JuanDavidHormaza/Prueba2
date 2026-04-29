@@ -8,6 +8,7 @@ import { ResultsPage } from "./pages/ResultsPage";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { TeacherDashboard } from "./pages/TeacherDashboard";
 import { MediaPage } from "./pages/MediaPage";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
   {
@@ -24,26 +25,50 @@ export const router = createBrowserRouter([
   },
   {
     path: "/dashboard",
-    Component: DashboardPage,
+    element: (
+      <ProtectedRoute allowedRoles={['student', 'APRENDIZ']}>
+        <DashboardPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/quiz",
-    Component: QuizPage,
+    element: (
+      <ProtectedRoute allowedRoles={['student', 'APRENDIZ']}>
+        <QuizPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/results",
-    Component: ResultsPage,
+    element: (
+      <ProtectedRoute allowedRoles={['student', 'APRENDIZ']}>
+        <ResultsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/admin",
-    Component: AdminDashboard,
+    element: (
+      <ProtectedRoute allowedRoles={['admin', 'ADMIN']}>
+        <AdminDashboard />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/teacher",
-    Component: TeacherDashboard,
+    element: (
+      <ProtectedRoute allowedRoles={['teacher', 'INSTRUCTOR', 'MONITOR']}>
+        <TeacherDashboard />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/media",
-    Component: MediaPage
+    element: (
+      <ProtectedRoute>
+        <MediaPage />
+      </ProtectedRoute>
+    ),
   }
 ]);

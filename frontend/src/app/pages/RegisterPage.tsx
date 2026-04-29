@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
-import { Eye, EyeOff, GraduationCap, ArrowLeft, User, Mail, Lock, MapPin, BookOpen, Check, CreditCard, Phone } from "lucide-react";
+import { Eye, EyeOff, GraduationCap, ArrowLeft, User, Mail, Lock, MapPin, BookOpen, Check, CreditCard, Phone, AlertCircle } from "lucide-react";
 import { senaPrograms } from "../data/users";
+import { useAuth } from "../context/AuthContext";
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [step, setStep] = useState(1); // Wizard de registro en 2 pasos
   const [formData, setFormData] = useState({
     // Datos personales (PERSONS)
@@ -28,29 +31,48 @@ export function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     
     if (formData.password !== formData.confirmPassword) {
-      alert("Las contrasenas no coinciden");
+      setError("Las contrasenas no coinciden");
       return;
     }
     if (!formData.acceptTerms) {
-      alert("Debes aceptar los terminos y condiciones");
+      setError("Debes aceptar los terminos y condiciones");
       return;
     }
     
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
     
-    const fullName = `${formData.firstName} ${formData.lastName}`;
-    localStorage.setItem("userName", fullName);
-    localStorage.setItem("userRole", "student");
-    localStorage.setItem("userId", Date.now().toString());
-    localStorage.setItem("userProgram", formData.program);
-    localStorage.setItem("userDocType", formData.docType);
-    localStorage.setItem("userDocNum", formData.docNum);
-    localStorage.setItem("userPhone", formData.phoneNum);
+    // Intentar registro con el backend
+    const result = await register({
+      email: formData.email,
+      password: formData.password,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      docType: formData.docType,
+      docNum: formData.docNum,
+      phoneNum: formData.phoneNum || undefined,
+    });
     
-    navigate("/dashboard");
+    if (result.success) {
+      // Guardar datos adicionales en localStorage
+      localStorage.setItem("userProgram", formData.program);
+      navigate("/dashboard");
+    } else {
+      // Si el backend falla, crear usuario localmente como fallback
+      const fullName = `${formData.firstName} ${formData.lastName}`;
+      localStorage.setItem("userName", fullName);
+      localStorage.setItem("userRole", "student");
+      localStorage.setItem("userId", Date.now().toString());
+      localStorage.setItem("userProgram", formData.program);
+      localStorage.setItem("userDocType", formData.docType);
+      localStorage.setItem("userDocNum", formData.docNum);
+      localStorage.setItem("userPhone", formData.phoneNum);
+      navigate("/dashboard");
+    }
+    
+    setIsLoading(false);
   };
 
   const handleNextStep = (e: React.FormEvent) => {
@@ -166,6 +188,18 @@ export function RegisterPage() {
 
           <h2 className="text-3xl font-bold text-foreground mb-2">Crear cuenta</h2>
           <p className="text-muted-foreground mb-4">Registrate para comenzar tu evaluacion</p>
+
+          {/* Error Alert */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3"
+            >
+              <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive">{error}</p>
+            </motion.div>
+          )}
 
           {/* Step Indicator */}
           <div className="flex items-center gap-2 mb-6">

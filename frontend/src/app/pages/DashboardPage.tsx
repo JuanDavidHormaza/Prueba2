@@ -6,12 +6,14 @@ import {
   GraduationCap, Clock, ChevronRight, Play, History, MessageSquare,
   TrendingUp, Award, Calendar
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
-  const userName = localStorage.getItem("userName") || "Usuario";
-  const userProgram = localStorage.getItem("userProgram") || "Desarrollo de Software";
+  const userName = user?.name || localStorage.getItem("userName") || "Usuario";
+  const userProgram = user?.program || localStorage.getItem("userProgram") || "Desarrollo de Software";
 
   // Mock data
   const stats = {
@@ -33,6 +35,7 @@ export function DashboardPage() {
   ];
 
   const handleLogout = () => {
+    logout();
     localStorage.clear();
     navigate("/");
   };

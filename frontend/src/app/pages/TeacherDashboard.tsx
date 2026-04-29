@@ -7,19 +7,22 @@ import {
   Award, ChevronDown, Filter
 } from "lucide-react";
 import { mockTestResults, TestResult, mockUsers } from "../data/users";
+import { useAuth } from "../context/AuthContext";
 
 export function TeacherDashboard() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [results, setResults] = useState<TestResult[]>(mockTestResults);
   const [selectedResult, setSelectedResult] = useState<TestResult | null>(null);
   const [feedback, setFeedback] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLevel, setFilterLevel] = useState("all");
 
-  const teacherName = localStorage.getItem("userName") || "Docente";
+  const teacherName = user?.name || localStorage.getItem("userName") || "Docente";
   const students = mockUsers.filter(u => u.role === 'student');
 
   const handleLogout = () => {
+    logout();
     localStorage.clear();
     navigate("/");
   };
